@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>檔案分享</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+    	    margin: 0 auto;
+            margin-top: 15vh;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            text-align: center;
+	    color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+	.uploaded-files {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+
+        #progressBar {
+            width: 100%;
+            background-color: #f3f3f3;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            display: none; /* Initially hidden */
+        }
+        #progress {
+            height: 20px;
+            width: 0;
+            background-color: #4caf50;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>檔案分享</h1>
+
+    <h2>選擇檔案上傳:</h2>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <input type="file" name="files" multiple required>
+        <button type="submit">上傳檔案</button>
+<br/>
+	<label for="validity">有效時限(小時):</label>
+        <input type="number" id="validity" name="validity" min="1" max="24" required>
+    </form>
+    <div id="progressBar">
+        <div id="progress"></div>
+    </div>
+	<div class="uploaded-files" id="uploadedFiles">
+        <h3>檔案編號:</h3>
+        <ul id="fileList"></ul>
+    </div>
+
+    <h2>下載檔案</h2>
+    <form id="downloadForm">
+        <input type="text" name="filename" placeholder="輸入檔案編號" required>
+        <button type="submit">下載檔案</button>
+    </form>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const files = this.files.files;
+	    const validity = document.getElementById('validity').value;
+
+            // 顯示進度條
+            const progressBar = document.getElementById('progressBar');
+            const progress = document.getElementById('progress');
+            progressBar.style.display = 'block'; // 顯示進度條
+
+            const formData = new FormData();
+            for (let file of files) {
+                formData.append('files', file); // 將檔案添加到 FormData
+            }
+		// 添加有效時間
+		formData.append('validity', validity);
+
+            // 使用 XMLHttpRequest 來上傳檔案
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
+
+            // 監聽上傳進度
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progress.style.width = percentComplete + '%'; // 更新進度條
+                }
+            });
+
+            // 上傳完成後的回調
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    const data = JSON.parse(xhr.responseText);
+                    alert(data.message);
+                    // 顯示已上傳檔案名稱
+                    const fileList = document.getElementById('fileList');
+                    const li = document.createElement('li');
+                    li.textContent = data.zipFileName; // 顯示壓縮檔案名稱
+                    fileList.appendChild(li);
+                } else {
+                    alert('上傳失敗: ' + xhr.responseText);
+                }
+                progress.style.width = '0'; // 重置進度條
+                progressBar.style.display = 'none'; // 隱藏進度條
+            };
+
+            // 發送請求
+            xhr.send(formData);
+        });
+
+        document.getElementById('downloadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const filename = this.filename.value;
+            window.location.href = `/download/${filename}`;
+        });
+    </script>
+</body>
+</html>
