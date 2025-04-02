@@ -1,11 +1,19 @@
 # Temporary_share
 a smaill-fileshare service
+
 1. 安裝 Node.js 和 npm
+```shell
 sudo install nodejs npm
+```
 
 2. 下載軟件所需要的庫
 cd your project file
-npm install express multer path fs uuid archiver dotenv https (forever)
+```shell
+npm install express multer path fs uuid archiver dotenv https
+```
+```shell
+npm install forever
+```
 
 3. 檔案結構
 your-project/
@@ -16,4 +24,10 @@ your-project/
              |      /fileshare.pem
              └── server.js
 4. 運行server.js
-node server.js  or  (forever start server.js)
+```shell
+node server.js
+```
+or
+```shell
+forever start server.js
+```
