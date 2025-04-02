@@ -1,5 +1,5 @@
 # Temporary_share
-a smaill-fileshare service
+a smaill-fileshare service 簡單分享文件
 
 1. 安裝 Node.js 和 npm
 ```shell
