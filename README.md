@@ -14,5 +14,5 @@ your-project/
              ├── ssl/fileshare.key
              |      /fileshare.pem
              └── server.js
-4. 
+4. 運行server.js
 node server.js  or  (forever start server.js)
