@@ -17,6 +17,7 @@ npm install forever
 ```
 
 3. 檔案結構
+```shell
 your-project/
              ├── temp/ 
              ├── uploads/ (zip file 存储)
@@ -24,7 +25,8 @@ your-project/
              ├── ssl/fileshare.key
              |      /fileshare.pem
              └── server.js
-4. 運行server.js
+```
+5. 運行server.js
 ```shell
 node server.js
 ```
