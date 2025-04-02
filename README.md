@@ -23,7 +23,7 @@ your-project/
              ├── uploads/ (zip file 存储)
              ├── public/index.html
              ├── ssl/fileshare.key
-             |      /fileshare.pem
+             |──────/fileshare.pem
              └── server.js
 ```
 5. 運行server.js
