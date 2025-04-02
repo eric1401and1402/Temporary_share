@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const https = require('https');
 const fs = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
 const archiver = require('archiver');
@@ -8,6 +9,14 @@ require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3210;
+
+app.use(express.static('public'));
+
+// Read SSL certificates *****
+const options = {
+    key: fs.readFileSync('ssl/fileshare.key'), 
+    cert: fs.readFileSync('ssl/fileshare.pem') 
+};
 
 //主上傳目錄
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
