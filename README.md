@@ -11,6 +11,7 @@ cd your project file
 ```shell
 npm install express multer path fs uuid archiver dotenv https
 ```
+*背景運行*
 ```shell
 npm install forever
 ```
