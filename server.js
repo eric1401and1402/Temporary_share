@@ -2,194 +2,208 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const https = require('https');
-const fs = require('fs').promises;
-const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
 const archiver = require('archiver');
+const { v4: uuidv4 } = require('uuid'); // Generate unique IDs
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3210;
 
+// Serve static files from the "public" directory
 app.use(express.static('public'));
 
-// Read SSL certificates *****
-const options = {
-    key: fs.readFileSync('ssl/fileshare.key'), 
-    cert: fs.readFileSync('ssl/fileshare.pem') 
-};
+// SSL certificate configuration
+let sslOptions;
+try {
+    sslOptions = {
+        key: fs.readFileSync('ssl/fileshare.key'),
+        cert: fs.readFileSync('ssl/fileshare.pem')
+    };
+} catch (err) {
+    console.error('Failed to load SSL certificates:', err.message);
+    process.exit(1);
+}
 
-//主上傳目錄
+// Ensure the upload directory exists
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
-
-//初始化主目錄
-async function initDirectories() {
-  await fs.mkdir(uploadDir, { recursive: true });
-}
-
-//動態建立暫存目錄
-async function createTempDir() {
-  const tempId = uuidv4();
-  const tempPath = path.join(__dirname, 'temp', tempId);
-  await fs.mkdir(tempPath, { recursive: true });
-  return tempPath;
-}
-
-//配置multer使用動態暫存目錄
-const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
+const ensureUploadDirExists = async () => {
     try {
-      const tempDir = await createTempDir();
-      req.tempUploadDir = tempDir; // 将临时目录附加到请求对象
-      cb(null, tempDir);
-    } catch (error) {
-      cb(error);
+        await fs.promises.mkdir(uploadDir, { recursive: true });
+    } catch (err) {
+        console.error('Failed to create upload directory:', err.message);
+        process.exit(1);
     }
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${uuidv4()}${ext}`);
-  }
+};
+ensureUploadDirExists();
+
+// Cleanup leftover temporary directories
+const cleanupTempDirectories = async () => {
+    try {
+        const tempDirs = (await fs.promises.readdir(uploadDir)).filter(dir => dir.startsWith('temp-'));
+        for (const tempDir of tempDirs) {
+            const tempDirPath = path.join(uploadDir, tempDir);
+            await fs.promises.rm(tempDirPath, { recursive: true, force: true });
+            console.log(`Cleaned up leftover temp directory: ${tempDir}`);
+        }
+    } catch (err) {
+        console.error('Error cleaning up temp directories:', err.message);
+    }
+};
+cleanupTempDirectories();
+setInterval(cleanupTempDirectories, 60 * 60 * 1000); // Every hour
+
+// Configure Multer for file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        if (!req.tempDir) {
+            req.tempDir = path.join(uploadDir, `temp-${uuidv4()}`);
+            fs.promises.mkdir(req.tempDir, { recursive: true }).then(() => cb(null, req.tempDir)).catch(cb);
+        } else {
+            cb(null, req.tempDir);
+        }
+    },
+    filename: (req, file, cb) => {
+        cb(null, file.originalname);
+    }
 });
 
 const upload = multer({
-  storage,
-  limits: {
-    fileSize: 100 * 1024 * 1024,
-    files: 20
-  }
+    storage: storage,
+    limits: { fileSize: 100 * 1024 * 1024 } // Limit file size to 100MB
 });
 
-//初始化主目錄
-initDirectories().catch(err => {
-  console.error('Failed to initialize directories:', err);
-  process.exit(1);
-});
-
-//文件上傳處理
-app.post('/upload', upload.array('files'), async (req, res) => {
-  let tempDir = req.tempUploadDir;
-  
-  try {
-    if (!req.files?.length) {
-      throw new Error('No files uploaded');
-    }
-
-    // 驗證儲存時間有效性
-    let validity = Math.min(parseInt(req.body.validity) || 24, 24);
-    
-    // 建立ZIP文件
-    const zipId = uuidv4();
-    const zipFileName = `${zipId}.zip`;
-    const zipPath = path.join(uploadDir, zipFileName);
-    
-    // 創建元數據
-    const metadata = {
-      originalFiles: req.files.map(file => ({
-        originalName: path.basename(file.originalname),
-        tempPath: file.path
-      })),
-      expirationTime: Date.now() + validity * 3600000
-    };
-
-    // 建立ZIP存檔
-    const output = fs.createWriteStream(zipPath);
-    const archive = archiver('zip', { zlib: { level: 9 } });
-    
-    archive.pipe(output);
-    
-    // 添加文件到ZIP
-    for (const file of metadata.originalFiles) {
-      archive.file(file.tempPath, { name: file.originalName });
-    }
-
-    // 完成打包
-    await archive.finalize();
-    
-    // 儲存元數據
-    await fs.writeFile(
-      path.join(uploadDir, `${zipId}.json`),
-      JSON.stringify(metadata)
-    );
-
-    res.json({
-      message: 'Files uploaded successfully',
-      zipId,
-      expires: new Date(metadata.expirationTime).toISOString()
-    });
-
-  } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ message: 'Server error during processing' });
-  } finally {
-    // 成功/失敗清理臨時目錄
-    if (tempDir) {
-      try {
-        await fs.rm(tempDir, { recursive: true, force: true });
-      } catch (cleanupError) {
-        console.error('Temp directory cleanup failed:', cleanupError);
-      }
-    }
-  }
-});
-
-//下載
-app.get('/download/:zipId', async (req, res) => {
+// Handle file uploads
+app.post('/upload', upload.array('files', 20), async (req, res) => {
     try {
-        const zipId = path.basename(req.params.zipId);
-        const metadataPath = path.join(uploadDir, `${zipId}.json`);
-        const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf-8'));
-
-        // 檢查檔案是否有效
-        if (Date.now() > metadata.expirationTime) {
-            await Promise.all([
-                fs.unlink(path.join(uploadDir, metadata.zipFileName)),
-                fs.unlink(metadataPath)
-            ]);
-            return res.status(410).json({ message: 'File has expired' });
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ message: 'No files uploaded' });
         }
 
-        res.download(path.join(uploadDir, metadata.zipFileName), `files-${zipId}.zip`);
-    } catch (error) {
-        if (error.code === 'ENOENT') {
+        // Validate and process the validity parameter
+        let validity = parseInt(req.body.validity, 10);
+    	let message;
+    	if (isNaN(validity) || validity <= 0) {
+        return res.status(400).json({ message: 'Invalid validity time' });
+    	}
+    	if (validity > 24) {
+        validity = 24;
+        message = 'Validity adjusted to maximum 24 hours.';}
+        const expirationTime = Date.now() + validity * 60 * 60 * 1000;
+
+        // Generate a unique ZIP file name
+        const zipFileName = `${uuidv4()}.zip`;
+        const zipFilePath = path.join(uploadDir, zipFileName);
+        const output = fs.createWriteStream(zipFilePath);
+        const archive = archiver('zip', { zlib: { level: 9 } });
+
+        // Handle archive events
+        output.on('close', async () => {
+            // Delete temporary directory
+            if (req.tempDir) {
+                await fs.promises.rm(req.tempDir, { recursive: true, force: true });
+            }
+
+            // Save expiration metadata
+            await fs.promises.writeFile(
+                path.join(uploadDir, `${zipFileName}.json`),
+                JSON.stringify({ expirationTime })
+            );
+
+            res.json({
+                message: 'Files uploaded and zipped successfully',
+                zipFileName: zipFileName
+            });
+        });
+
+        archive.on('error', async (err) => {
+            // Cleanup in case of error
+            if (req.tempDir) {
+                await fs.promises.rm(req.tempDir, { recursive: true, force: true });
+            }
+            console.error('Error creating zip file:', err.message);
+            res.status(500).json({ message: 'Error creating zip file', error: err.message });
+        });
+
+        output.on('error', async (err) => {
+            // Handle output stream errors
+            if (req.tempDir) {
+                await fs.promises.rm(req.tempDir, { recursive: true, force: true });
+            }
+            console.error('Error writing zip file:', err.message);
+            res.status(500).json({ message: 'Error writing zip file', error: err.message });
+        });
+
+        archive.pipe(output);
+
+        // Add files to the ZIP archive
+        req.files.forEach(file => {
+            archive.file(file.path, { name: file.originalname });
+        });
+
+        await archive.finalize();
+    } catch (err) {
+        console.error('Error during file upload:', err.message);
+        res.status(500).json({ message: 'Unexpected server error', error: err.message });
+    }
+});
+
+// File download endpoint
+app.get('/download/:filename', async (req, res) => {
+    try {
+        const filename = path.basename(req.params.filename);
+        const fileLocation = path.join(uploadDir, filename);
+        const expirationFile = path.join(uploadDir, `${filename}.json`);
+
+        await fs.promises.access(fileLocation, fs.constants.F_OK);
+
+        if (await fs.promises.access(expirationFile).then(() => true).catch(() => false)) {
+            const { expirationTime } = JSON.parse(await fs.promises.readFile(expirationFile, 'utf-8'));
+            if (Date.now() > expirationTime) {
+                await Promise.all([
+                    fs.promises.unlink(fileLocation),
+                    fs.promises.unlink(expirationFile)
+                ]);
+                return res.status(410).json({ message: 'File expired' });
+            }
+        }
+
+        res.download(fileLocation, filename);
+    } catch (err) {
+        if (err.code === 'ENOENT') {
             return res.status(404).json({ message: 'File not found' });
         }
-        console.error('Download error:', error);
-        res.status(500).json({ message: 'Server error during download' });
+        console.error('Error during file download:', err.message);
+        res.status(500).json({ message: 'Unexpected server error', error: err.message });
     }
 });
 
-// 刪除過期項目
-async function cleanExpiredFiles() {
+// Cleanup expired files
+const deleteExpiredFiles = async () => {
     try {
-        const files = await fs.readdir(uploadDir);
-        const cleanupPromises = files.map(async file => {
-            if (file.endsWith('.json')) {
-                const metadataPath = path.join(uploadDir, file);
-                try {
-                    const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf-8'));
-                    if (Date.now() > metadata.expirationTime) {
+        const files = await fs.promises.readdir(uploadDir);
+        for (const file of files) {
+            if (file.endsWith('.zip')) {
+                const expirationFile = path.join(uploadDir, `${file}.json`);
+                if (await fs.promises.access(expirationFile).then(() => true).catch(() => false)) {
+                    const { expirationTime } = JSON.parse(await fs.promises.readFile(expirationFile, 'utf-8'));
+                    if (Date.now() > expirationTime) {
                         await Promise.all([
-                            fs.unlink(path.join(uploadDir, metadata.zipFileName)),
-                            fs.unlink(metadataPath)
+                            fs.promises.unlink(path.join(uploadDir, file)),
+                            fs.promises.unlink(expirationFile)
                         ]);
-                        console.log(`Cleaned expired file: ${metadata.zipFileName}`);
+                        console.log(`Deleted expired file: ${file}`);
                     }
-                } catch (error) {
-                    console.error('Error processing metadata:', error);
                 }
             }
-        });
-        await Promise.all(cleanupPromises);
-    } catch (error) {
-        console.error('Cleanup error:', error);
+        }
+    } catch (err) {
+        console.error('Error during expired file cleanup:', err.message);
     }
-}
+};
+setInterval(deleteExpiredFiles, 30 * 60 * 1000); // Every 30 minutes
 
-//  刪除過期項目:15分鐘
-setInterval(cleanExpiredFiles, 900000);
-cleanExpiredFiles(); // Initial cleanup
-
-// 啟動伺服器
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Start HTTPS server
+https.createServer(sslOptions, app).listen(PORT, () => {
+    console.log(`Server running on https://localhost:${PORT}`);
 });
