@@ -81,14 +81,10 @@ app.post('/upload', upload.array('files', 20), async (req, res) => {
         }
 
         // Validate and process the validity parameter
-        let validity = parseInt(req.body.validity, 10);
-    	let message;
-    	if (isNaN(validity) || validity <= 0) {
-        return res.status(400).json({ message: 'Invalid validity time' });
-    	}
-    	if (validity > 24) {
-        validity = 24;
-        message = 'Validity adjusted to maximum 24 hours.';}
+        let validity = Math.min(Math.max(parseInt(req.body.validity, 10) || 0, 1), 24); // Between 1 and 24 hours
+        if (!validity) {
+            return res.status(400).json({ message: 'Invalid validity time' });
+        }
         const expirationTime = Date.now() + validity * 60 * 60 * 1000;
 
         // Generate a unique ZIP file name
