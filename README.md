@@ -9,7 +9,7 @@ sudo install nodejs npm
 2. 下載軟件所需要的庫
 cd your project file
 ```shell
-npm install express multer path fs uuid archiver dotenv https
+npm install express multer path fs uuid archiver dotenv https uuid
 ```
 *背景運行*
 ```shell
