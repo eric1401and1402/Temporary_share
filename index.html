@@ -106,7 +106,7 @@
 	<form id="downloadForm">
     		<input type="text" 
            name="filename" 
-           placeholder="輸入檔案編號 (例: abc12345-5678)" 
+           placeholder="輸入檔案編號 (例: abc12345-5678.zip)" 
            pattern="[a-f0-9-]{20}" 
            title="請輸入正確的檔案編號格式"
            required style="width: 225px;">
@@ -138,7 +138,7 @@
             // 進度條更新邏輯
 	xhr.upload.addEventListener('progress', function(e) {
     	if (e.lengthComputable) {
-        const percentComplete = (e.loaded / e.total) * 100; // 改為 100%
+        const percentComplete = (e.loaded / e.total) * 100;
         progress.style.width = percentComplete + '%';
         progress.textContent = Math.round(percentComplete) + '%'; // 顯示百分比文字
     }
