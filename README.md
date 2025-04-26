@@ -3,7 +3,7 @@ a simple fileshare service 簡單文件分享服務
 
 1. 安裝 Node.js 和 npm
 ```shell
-sudo install nodejs npm
+sudo apt install nodejs npm
 ```
 
 2. 下載軟件所需要的庫
