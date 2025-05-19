@@ -23,6 +23,8 @@ npm install forever
 your-project/
              ├── uploads/ (zip file 存储)
              ├── public/index.html
+                  └─/fileshare.css
+                  └─/fileshare.js
              ├── ssl/fileshare.key
                  └─/fileshare.pem
              └── server.js
