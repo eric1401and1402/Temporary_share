@@ -4,11 +4,16 @@ const path = require('path');
 const https = require('https');
 const fs = require('fs');
 const archiver = require('archiver');
-const { v4: uuidv4 } = require('uuid'); // Generate unique IDs
+const { v4: uuidv4 } = require('uuid');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3210;
+
+// Generate a UUID in 4-4-4 format (e.g., abcd-efgh-ijkl)
+const generateShortUUID = () => {
+    return uuidv4().replace(/-/g, '').match(/.{1,4}/g).slice(0, 3).join('-');
+};
 
 // Serve static files from the "public" directory
 app.use(express.static('public'));
@@ -57,7 +62,7 @@ setInterval(cleanupTempDirectories, 60 * 60 * 1000); // Every hour
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (!req.tempDir) {
-            req.tempDir = path.join(uploadDir, `temp-${uuidv4()}`);
+            req.tempDir = path.join(uploadDir, `temp-${generateShortUUID()}`);
             fs.promises.mkdir(req.tempDir, { recursive: true }).then(() => cb(null, req.tempDir)).catch(cb);
         } else {
             cb(null, req.tempDir);
@@ -88,7 +93,7 @@ app.post('/upload', upload.array('files', 20), async (req, res) => {
         const expirationTime = Date.now() + validity * 60 * 60 * 1000;
 
         // Generate a unique ZIP file name
-        const zipFileName = `${uuidv4()}.zip`;
+        const zipFileName = `${generateShortUUID()}.zip`;
         const zipFilePath = path.join(uploadDir, zipFileName);
         const output = fs.createWriteStream(zipFilePath);
         const archive = archiver('zip', { zlib: { level: 9 } });
