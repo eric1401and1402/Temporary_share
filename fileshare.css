@@ -1,0 +1,142 @@
+body {
+    font-family: Arial, sans-serif;
+    width: 100vw;
+    height: 100%;
+    position: relative;
+    padding: 0px;
+    margin: 0px;
+    background-color:#C4E1E6;    
+}
+.bodydesign{
+    max-width: 600px;
+    margin: 0 auto;
+    margin-top: 5%;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    position: relative;
+    box-shadow: 5px 10px #8888888a;
+}
+button {
+    padding: 10px 15px;
+    background-color: #648DB3;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+button:hover {
+    background-color: #B2D8CE;
+}
+.tablink {
+  background-color: #555;
+  color: white;
+  float: left;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  font-size: 17px;
+  width: 50%;
+  border-radius: 0px;
+}
+.tablink:hover{
+    background-color:#B2D8CE;
+    color: #000;
+}
+h1 {
+    text-align: center;
+    color: #333;
+}
+form {
+    margin-bottom: 20px;
+    margin-left: 30px;
+    margin-right: 30px;
+}
+
+input[type="file"] {
+    margin: 10px 0;
+    display: none;
+}
+
+.style-file-upload{
+    border: 2px dashed #ccc;
+    padding: 6px 12px;
+    cursor: pointer;
+    height: 30px;
+    margin-bottom: 5px;
+    max-width: 500px;
+    display:flex;
+    min-height: fit-content;
+    min-width: fit-content;
+    justify-content:center;
+    align-items: center;
+}
+.style-file-upload div{
+    list-style-type: none;
+    display: flex;
+    flex-wrap:wrap;
+    justify-content: center;
+}
+.style-file-upload div li{
+    border: 2px dashed #ccc;
+    margin:4px;
+    padding:4px;
+    width: fit-content;
+    max-width:200px;
+    min-width:85px;
+    overflow: auto;
+
+}
+.uploaded-files {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #f9f9f9;
+}
+#progressBar {
+    width: 100%;
+    background-color: #f3f3f3;
+    border: 1px solid #ccc;
+    margin-top: 10px;
+    display: none; /* Initially hidden */
+}
+#progress {
+    height: 20px;
+    width: 0;
+    background-color: #4caf50;
+    transition: width 0.3s ease;
+    text-align: center;
+    line-height: 20px;
+    font-size: 12px;
+}
+#progress::after {
+    content: attr(data-progress);
+    display: inline-block;
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+}
+#info{
+    display: grid;
+    justify-content: end;
+}
+@media (max-width: 600px) {
+.bodydesign{
+	max-width: 360px;
+}
+    button {
+        width: 100%;
+        margin-top: 10px;
+    }
+#fileList li button{
+  width: 85%;
+  }
+}
+@media (max-width: 400px) {
+.bodydesign{
+	max-width: 320px;
+}
+}

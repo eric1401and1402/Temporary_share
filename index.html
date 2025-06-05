@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="fileshare.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://davidshimjs.github.io/qrcodejs/qrcode.min.js"></script>
+    <script src="fileshare.js" ></script>
+    <link rel="manifest" href="manifest.json">
+    <title>檔案分享</title>
+    <link rel="icon" href="icon.png" type="image/icon type">
+</head>
+<body>
+    <div class="bodydesign">
+        <h1>檔案分享</h1>
+        <button class="tablink" onclick="openFunction('Share', this, '#52357B')" id="defaultOpen">文件上傳</button>
+        <button class="tablink" onclick="openFunction('Download', this, '#5459AC')">文件下載</button>
+    <br />
+        <div id="Share" class="tabcontent">
+            <br />
+            <h2>文件上傳:</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+            <label class="style-file-upload"><div id="uploadfileList"> 點擊選取上傳文件 </div>
+                <input type="file" id="file" name="files" multiple required onchange="javascript:updateList()"/>
+            </label>
+                <br />
+                <label for="validity">有效時限(小時):</label>
+                <input type="number" id="validity" name="validity" min="1" max="24" value="2" required style="margin-right: 62px;">
+                <button type="submit">上傳檔案</button>
+            </form>
+            <div id="progressBar">
+                <div id="progress"></div>
+            </div>
+            <div class="uploaded-files" id="uploadedFiles">
+                <h3>檔案編號:</h3>
+                <ul id="fileList"></ul>
+            </div>
+    </div>
+
+   <div id="Download" class="tabcontent"> 
+        <br />
+        <h2>文件下載</h2>
+        <form id="downloadForm">
+            <input type="text" 
+            name="filename" 
+            placeholder="輸入檔案編號 (例: abc1-2345-5678.zip)" 
+            pattern="[a-f0-9-]{20}" 
+            title="請輸入正確的檔案編號格式"
+            required style="width: 235px;">
+            <button type="submit">下載檔案</button>
+        </form>
+   </div>
+
+<div id="info"><a href="https://project.erickawong.com/" style="text-decoration: none;">『!』</a></div>
+</div>
+</body>
+</html>
