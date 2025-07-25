@@ -1,58 +1,106 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-Hant-HK">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="fileshare.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://davidshimjs.github.io/qrcodejs/qrcode.min.js"></script>
-    <script src="fileshare.js" ></script>
-    <link rel="manifest" href="manifest.json">
     <title>檔案分享</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> 
+    <link rel="stylesheet" type="text/css" href="fileshare.css">
+    <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.png" type="image/icon type">
+
 </head>
 <body>
-    <div class="bodydesign">
-        <h1>檔案分享</h1>
-        <button class="tablink" onclick="openFunction('Share', this, '#52357B')" id="defaultOpen">文件上傳</button>
-        <button class="tablink" onclick="openFunction('Download', this, '#5459AC')">文件下載</button>
-    <br />
-        <div id="Share" class="tabcontent">
-            <br />
-            <h2>文件上傳:</h2>
-            <form id="uploadForm" enctype="multipart/form-data">
-            <label class="style-file-upload"><div id="uploadfileList"> 點擊選取上傳文件 </div>
-                <input type="file" id="file" name="files" multiple required onchange="javascript:updateList()"/>
-            </label>
-                <br />
-                <label for="validity">有效時限(小時):</label>
-                <input type="number" id="validity" name="validity" min="1" max="24" value="2" required style="margin-right: 62px;">
-                <button type="submit">上傳檔案</button>
-            </form>
-            <div id="progressBar">
-                <div id="progress"></div>
+    <div class="container">
+        <header>
+            <h1>檔案分享</h1>
+            <p class="subtitle">快速、簡便的文件分享</p>
+        </header>
+        
+        <div class="tabs">
+            <button class="tablink active" data-tab="upload">文件上傳</button>
+            <button class="tablink" data-tab="download">文件下載</button>
+        </div>
+        
+        <!-- 上傳頁面 -->
+        <div id="upload" class="tabcontent active">
+            <h2><i class="fas fa-cloud-upload-alt"></i> 文件上傳</h2>
+            
+            <div class="upload-area" id="dropArea">
+                <i class="fas fa-file-upload"></i>
+                <h3>點擊選取或拖曳文件至此</h3>
+                <p>支援單一或多個檔案上傳</p>
+                <p>最大檔案大小 100MB</p> 
+		<p>最大檔案數量 20個 </p>
+                <input type="file" id="fileInput" multiple>
             </div>
-            <div class="uploaded-files" id="uploadedFiles">
-                <h3>檔案編號:</h3>
-                <ul id="fileList"></ul>
+            
+            <div class="file-list" id="fileList">
+                <div class="file-item">
+                    <div class="file-name">尚未選擇檔案</div>
+                </div>
             </div>
+            
+            <div class="form-group">
+                <label for="validity">有效時限 (小時):</label>
+                <input type="number" id="validity" min="1" max="24" value="2">
+            </div>
+            
+            <div class="progress-container">
+                <div class="progress-label">
+                    <span>上傳進度</span>
+                    <span id="progressText">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress" id="progressBar"></div>
+                </div>
+            </div>
+            
+            <button type="submit" id="uploadButton">上傳檔案</button>
+            
+            <div class="uploaded-info" id="uploadedInfo">
+                <div>
+                    <span class="info-icon"><i class="fas fa-check"></i></span>
+                    <strong>檔案上傳成功！</strong>
+                </div>
+                <p style="margin: 15px 0 10px 55px;">檔案編號: <span id="fileId"></span><span id="fileqr"></span></p>
+                <p style="margin-left: 55px; color: #555;">請將此編號提供給需要下載檔案的人</p>
+            </div>
+        </div>
+        
+        <!-- 下載頁面 -->
+        <div id="download" class="tabcontent">
+            <h2><i class="fas fa-cloud-download-alt"></i> 文件下載</h2>
+            
+            <div class="download-form">
+                <input type="text" id="fileCode" placeholder="輸入檔案編號 (例: abc1-2345-5678.zip)" required>
+                <button type="submit" id="downloadButton">下載檔案</button>
+            </div>
+            
+            <div class="example">
+                <h4><i class="fas fa-info-circle"></i> 如何取得檔案編號？</h4>
+                <p>檔案編號由文件上傳者提供，格式為：xxxx-xxxx-xxxx.zip</p>
+                <p>請向您的文件分享者索取檔案編號，並在此輸入下載</p>
+            </div>
+            
+            <div class="progress-container">
+                <div class="progress-label">
+                    <span>下載進度</span>
+                    <span id="downloadProgressText">等待中...</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress" id="downloadProgressBar"></div>
+                </div>
+            </div>
+        </div>
     </div>
-
-   <div id="Download" class="tabcontent"> 
-        <br />
-        <h2>文件下載</h2>
-        <form id="downloadForm">
-            <input type="text" 
-            name="filename" 
-            placeholder="輸入檔案編號 (例: abc1-2345-5678.zip)" 
-            pattern="[a-f0-9-]{20}" 
-            title="請輸入正確的檔案編號格式"
-            required style="width: 235px;">
-            <button type="submit">下載檔案</button>
-        </form>
-   </div>
-
-<div id="info"><a href="https://project.erickawong.com/" style="text-decoration: none;">『!』</a></div>
-</div>
+    
+    <!-- 彈出訊息容器 -->
+    <div id="popup-container"></div>
+    
+    <!-- 資訊按鈕 -->
+    <a href="https://project.erickawong.com/" class="info-button">!</a>
+<script src="fileshare.js" ></script>
+<script src="https://davidshimjs.github.io/qrcodejs/qrcode.min.js"></script>
 </body>
 </html>
