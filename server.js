@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const https = require('https');
@@ -112,7 +112,7 @@ app.post('/upload', upload.array('files', 20), async (req, res) => {
             );
 
             res.json({
-                message: 'Files uploaded and zipped successfully',
+                message: '文件上傳成功',
                 zipFileName: zipFileName
             });
         });
@@ -165,14 +165,14 @@ app.get('/download/:filename', async (req, res) => {
                     fs.promises.unlink(fileLocation),
                     fs.promises.unlink(expirationFile)
                 ]);
-                return res.status(410).json({ message: 'File expired' });
+                return res.status(410).json({ message: '分享檔案已過期' });
             }
         }
 
         res.download(fileLocation, filename);
     } catch (err) {
         if (err.code === 'ENOENT') {
-            return res.status(404).json({ message: 'File not found' });
+            return res.status(404).json({ message: '分享檔案已過期/沒有這檔案' });
         }
         console.error('Error during file download:', err.message);
         res.status(500).json({ message: 'Unexpected server error', error: err.message });
