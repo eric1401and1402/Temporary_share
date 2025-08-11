@@ -50,7 +50,12 @@
         function handleDrop(e) {
             const dt = e.dataTransfer;
             const files = dt.files;
-            handleFiles(files);
+            const dataTransfer = new DataTransfer();
+    		for (let i = 0; i < files.length; i++) {
+        	dataTransfer.items.add(files[i]);
+    		}
+    		fileInput.files = dataTransfer.files;
+    		handleFiles(files); // 更新文件列表顯示
         }
         
         fileInput.addEventListener('change', function() {
@@ -174,32 +179,58 @@
             
             // 請求完成事件
             xhr.addEventListener('load', () => {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    try {
-                        const data = JSON.parse(xhr.responseText);
-                        
-                        // 確保進度顯示100%
-                        progressBar.style.width = '100%';
-                        progressText.textContent = '100%';
-                        
-                        showPopup('檔案上傳成功！', 'success');
-                        
-                        // 顯示檔案編號
-			
-                        document.getElementById('fileId').textContent = data.zipFileName;
-                        document.getElementById('uploadedInfo').style.display = 'block';
-                 		
-                        // 複製檔案編號到剪貼簿
-                        navigator.clipboard.writeText(data.zipFileName).then(() => {
-                            setTimeout(() => {
-                                showPopup('檔案編號已複製到剪貼簿', 'info');
-                            }, 2000);
+    		if (xhr.status >= 200 && xhr.status < 300) {
+       		try {
+            	const data = JSON.parse(xhr.responseText);
+            	
+            	// 確保進度顯示100%
+            	progressBar.style.width = '100%';
+            	progressText.textContent = '100%';
+            
+            	showPopup('檔案上傳成功！', 'success');
+            
+            	// 顯示檔案編號
+            	document.getElementById('fileId').textContent = data.zipFileName;
+            	document.getElementById('uploadedInfo').style.display = 'block';
+            
+            	// ===== 自動生成 QR Code =====
+            	const fileqr = document.getElementById('fileqr');
+            	fileqr.innerHTML = ''; // 清空現有內容
+            
+            	// 創建 QR Code 容器
+            	const qrContainer = document.createElement('div');
+            	qrContainer.id = `qr-container-${data.zipFileName}`;
+            	qrContainer.style.marginTop = '10px';
+            	qrContainer.style.textAlign = 'center'; // 居中顯示
+           	fileqr.appendChild(qrContainer);
+            
+            	// 自動生成 QR Code
+            	new QRCode(qrContainer, {
+                text: `${window.location.origin}/download/${data.zipFileName}`,
+                width: 128,
+                height: 128,
+            	});
+            
+            	// 添加提示文字
+            	const qrText = document.createElement('p');
+            	qrText.textContent = '掃描QR Code下載檔案';
+            	qrText.style.marginTop = '8px';
+            	qrText.style.color = '#666';
+            	qrText.style.fontSize = '0.9em';
+            	fileqr.appendChild(qrText);
+            	// ===== QR Code 功能結束 =====
+            
+            	// 複製檔案編號到剪貼簿
+            	navigator.clipboard.writeText(data.zipFileName).then(() => {
+                	setTimeout(() => {
+                   	showPopup('檔案編號已複製到剪貼簿', 'info');
+                	}, 2000);
+            	});
 
-			//重設進度顯示
-			progressBar.style.width = '0%';
-                        progressText.textContent = '0%';
+		//重設進度顯示
+		progressBar.style.width = '0%';
+                progressText.textContent = '0%';
 
-                        });
                     } catch (e) {
                         showPopup('解析伺服器響應失敗', 'error');
                         console.error('解析錯誤:', e);
